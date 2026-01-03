@@ -1,11 +1,9 @@
 package app;
 
-import ui.MainController;
-import logic.MedicineLogic;
-import model.Medicine;
-
 import javafx.application.Application;
 import javafx.stage.Stage;
+import logic.MedicineLogic;
+import ui.MainController;
 
 public class MedicineManagerApp extends Application
 {
@@ -16,9 +14,12 @@ public class MedicineManagerApp extends Application
         MedicineLogic medicineLogic = new MedicineLogic();
 
         // Creates link to the main controller
-        MainController controller = new MainController();
+        MainController controller = new MainController(medicineLogic);
 
         // Initialize and show the main application window
+        primaryStage.setTitle("Medicine Manager");
+        primaryStage.setScene(controller.createMainScene());
+        primaryStage.show();
     }
 
     public static void main(String[] args) 
