@@ -1,9 +1,11 @@
 package ui;
 
+import java.time.LocalTime;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.*;
 import logic.MedicineLogic;
 import model.Medicine;
@@ -18,6 +20,9 @@ public class MainController
     private MedicineLogic medicineLogic;
     private Scene mainScene;
     private TableView<Medicine> medicineTable;
+    private TableColumn<Medicine, String> nameColumn;
+    private TableColumn<Medicine, String> dosageColumn;
+    private TableColumn<Medicine, LocalTime> timeColumn;
     private Button addButton;
     private Button deleteButton;
     private Button editButton;
@@ -47,11 +52,23 @@ public class MainController
         // ----------------------------------------------------------------------------------------------
         // Center section with TableView
         medicineTable = new TableView<>();
-        TableColumn<Medicine, String> nameColumn = new TableColumn<>("Name");
-        TableColumn<Medicine, String> dosageColumn = new TableColumn<>("Dosage");
-        TableColumn<Medicine, String> timeColumn = new TableColumn<>("Time to Take");
+        medicineTable.setEditable(false);
+
+        nameColumn = new TableColumn<>("Name");
+        dosageColumn = new TableColumn<>("Dosage");
+        timeColumn = new TableColumn<>("Time to Take");
         medicineTable.getColumns().addAll(nameColumn, dosageColumn, timeColumn);
         medicineTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        medicineTable.setItems(medicineLogic.getAllMedicines());
+
+        nameColumn.setCellValueFactory(cd -> cd.getValue().nameProperty());
+        dosageColumn.setCellValueFactory(cd -> cd.getValue().dosageProperty());
+        timeColumn.setCellValueFactory(cd -> cd.getValue().timeToTakeProperty());
+
+        nameColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        dosageColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+
         root.setCenter(medicineTable);
 
         // ----------------------------------------------------------------------------------------------
@@ -89,7 +106,14 @@ public class MainController
      */
     private void handleAddButton()
     {
-        // TO DO: Implement logic to handle adding a new medicine
+        medicineTable.setEditable(true);
+
+        Medicine newMedicine = new Medicine("", "", null);
+        medicineLogic.addMedicine(newMedicine);
+
+        int row =  medicineTable.getItems().size() - 1;
+        medicineTable.getSelectionModel().select(row);
+        medicineTable.edit(row, nameColumn);
     }
 
     /**

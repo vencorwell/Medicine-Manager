@@ -1,12 +1,18 @@
 package logic;
 
-import java.util.ArrayList;
-import java.util.List;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import model.Medicine;
 
 public class MedicineLogic 
 {
-    private List<Medicine> medicationList = new ArrayList<>();
+    private final ObservableList<Medicine> medicationList = FXCollections.observableArrayList();
+
+    public ObservableList<Medicine> getAllMedicines() 
+    {
+        return medicationList;
+    }
 
     public void addMedicine(Medicine medicine) 
     {
