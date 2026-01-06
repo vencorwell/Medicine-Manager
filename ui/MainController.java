@@ -32,6 +32,7 @@ public class MainController
     private Button addButton;
     private Button deleteButton;
     private Button editButton;
+    private Button cancelButton;
 
     public MainController(MedicineLogic medicineLogic) 
     {
@@ -75,6 +76,7 @@ public class MainController
         nameColumn.setCellFactory(TextFieldTableCell.forTableColumn());
         dosageColumn.setCellFactory(TextFieldTableCell.forTableColumn());
 
+        // Input fields for adding new medicine
         nameInputField = new TextField();
         nameInputField.setPromptText("Name");
         dosageInputField = new TextField();
@@ -87,6 +89,7 @@ public class MainController
         inputBox.setVisible(false); // Initially hidden
         inputBox.setManaged(false); // Exclude from layout calculations when hidden
 
+
         VBox centerSection = new VBox(inputBox, medicineTable);
         root.setCenter(centerSection);
 
@@ -97,14 +100,17 @@ public class MainController
         editButton.setDisable(true); // Initially disabled
         deleteButton = new Button("Delete");
         deleteButton.setDisable(true); // Initially disabled
+        cancelButton = new Button("Cancel");
+        cancelButton.setDisable(true); // Initially disabled
+        cancelButton.setVisible(false); // Initially hidden
 
-        HBox bottomSection = new HBox(10, addButton,editButton, deleteButton);
+        HBox bottomSection = new HBox(10, addButton, cancelButton, editButton, deleteButton);
         bottomSection.setPadding(new Insets(10));
 
         // Push buttons apart
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        bottomSection.getChildren().add(1, spacer);
+        bottomSection.getChildren().add(2, spacer);
         root.setBottom(bottomSection);
 
         // ----------------------------------------------------------------------------------------------
@@ -123,6 +129,7 @@ public class MainController
         addButton.setOnAction(e -> handleAddButton());
         deleteButton.setOnAction(e -> handleDeleteButton());
         editButton.setOnAction(e -> handleEditButton());
+        cancelButton.setOnAction(e -> handleCancelButton());
 
 
         // Create the scene
@@ -139,6 +146,8 @@ public class MainController
         inputBox.setVisible(true);
         inputBox.setManaged(true);
         addButton.setDisable(true);
+        cancelButton.setVisible(true);
+        cancelButton.setDisable(false);
 
         nameInputField.clear();
         dosageInputField.clear();
@@ -163,17 +172,31 @@ public class MainController
         // TO DO: Implement logic to handle editing a selected medicine
     }
 
+    private void handleCancelButton()
+    {
+        inputBox.setVisible(false);
+        inputBox.setManaged(false);
+        addButton.setDisable(false);
+        cancelButton.setVisible(false);
+        cancelButton.setDisable(true);
+    }
+
     /**
      * Creates a new Medicine from input fields and adds it to the list
      */
     private void commitNewMedicine()
     {
-        // Manage scenarios where boxes are empty (will need to expand for other fields later)
-        if(nameInputField.getText().isBlank())
+        if(nameInputField.getText().isBlank()) // Name is mandatory
         {
             nameInputField.requestFocus();
             return;
         }
+        else if(!nameInputField.getText().isBlank() && dosageInputField.getText().isBlank()) // Dosage is mandatory
+        {
+            dosageInputField.requestFocus();
+            return;
+        }
+      
 
         Medicine newMedicine = new Medicine(
             nameInputField.getText().trim(),
