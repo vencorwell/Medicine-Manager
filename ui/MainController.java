@@ -1,11 +1,13 @@
 package ui;
 
 import java.time.LocalTime;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import logic.MedicineLogic;
 import model.Medicine;
@@ -17,12 +19,16 @@ UI events will be processed here and appropriate logic methods will be called
 */
 public class MainController 
 {
-    private MedicineLogic medicineLogic;
+    private final MedicineLogic medicineLogic;
     private Scene mainScene;
     private TableView<Medicine> medicineTable;
     private TableColumn<Medicine, String> nameColumn;
     private TableColumn<Medicine, String> dosageColumn;
     private TableColumn<Medicine, LocalTime> timeColumn;
+    private HBox inputBox;
+    private TextField nameInputField;
+    private TextField dosageInputField;
+    private TextField timeInputField;
     private Button addButton;
     private Button deleteButton;
     private Button editButton;
@@ -50,7 +56,7 @@ public class MainController
         root.setTop(topSection);
 
         // ----------------------------------------------------------------------------------------------
-        // Center section with TableView
+        // Center section 
         medicineTable = new TableView<>();
         medicineTable.setEditable(false);
 
@@ -69,7 +75,20 @@ public class MainController
         nameColumn.setCellFactory(TextFieldTableCell.forTableColumn());
         dosageColumn.setCellFactory(TextFieldTableCell.forTableColumn());
 
-        root.setCenter(medicineTable);
+        nameInputField = new TextField();
+        nameInputField.setPromptText("Name");
+        dosageInputField = new TextField();
+        dosageInputField.setPromptText("Dosage");
+        timeInputField = new TextField();
+        timeInputField.setPromptText("Time to Take (HH:MM)");
+
+        inputBox = new HBox(10, nameInputField, dosageInputField, timeInputField);
+        inputBox.setPadding(new Insets(10));
+        inputBox.setVisible(false); // Initially hidden
+        inputBox.setManaged(false); // Exclude from layout calculations when hidden
+
+        VBox centerSection = new VBox(inputBox, medicineTable);
+        root.setCenter(centerSection);
 
         // ----------------------------------------------------------------------------------------------
         // Bottom section with Buttons
@@ -89,7 +108,18 @@ public class MainController
         root.setBottom(bottomSection);
 
         // ----------------------------------------------------------------------------------------------
-        // Set button actions
+        // Set event handlers and button actions
+        EventHandler<KeyEvent> enterKeyHandler = e -> {
+            if(e.getCode() == KeyCode.ENTER) {
+                commitNewMedicine();
+            }
+        };
+
+        // When the enter key is pressed in any input field, commit the new medicine
+        nameInputField.setOnKeyPressed(enterKeyHandler);
+        dosageInputField.setOnKeyPressed(enterKeyHandler);
+        timeInputField.setOnKeyPressed(enterKeyHandler);
+
         addButton.setOnAction(e -> handleAddButton());
         deleteButton.setOnAction(e -> handleDeleteButton());
         editButton.setOnAction(e -> handleEditButton());
@@ -106,14 +136,15 @@ public class MainController
      */
     private void handleAddButton()
     {
-        medicineTable.setEditable(true);
+        inputBox.setVisible(true);
+        inputBox.setManaged(true);
+        addButton.setDisable(true);
 
-        Medicine newMedicine = new Medicine("", "", null);
-        medicineLogic.addMedicine(newMedicine);
+        nameInputField.clear();
+        dosageInputField.clear();
+        timeInputField.clear();
 
-        int row =  medicineTable.getItems().size() - 1;
-        medicineTable.getSelectionModel().select(row);
-        medicineTable.edit(row, nameColumn);
+        nameInputField.requestFocus();
     }
 
     /**
@@ -130,5 +161,30 @@ public class MainController
     private void handleEditButton()
     {
         // TO DO: Implement logic to handle editing a selected medicine
+    }
+
+    /**
+     * Creates a new Medicine from input fields and adds it to the list
+     */
+    private void commitNewMedicine()
+    {
+        // Manage scenarios where boxes are empty (will need to expand for other fields later)
+        if(nameInputField.getText().isBlank())
+        {
+            nameInputField.requestFocus();
+            return;
+        }
+
+        Medicine newMedicine = new Medicine(
+            nameInputField.getText().trim(),
+            dosageInputField.getText().trim(),
+            LocalTime.parse(timeInputField.getText().trim())
+        );
+
+        medicineLogic.addMedicine(newMedicine);
+
+        inputBox.setVisible(false);
+        inputBox.setManaged(false);
+        addButton.setDisable(false);
     }
 }
