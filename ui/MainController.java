@@ -1,6 +1,7 @@
 package ui;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -9,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
+import javafx.util.StringConverter;
 import logic.MedicineLogic;
 import model.Medicine;
 
@@ -28,7 +30,7 @@ public class MainController
     private HBox inputBox;
     private TextField nameInputField;
     private TextField dosageInputField;
-    private TextField timeInputField;
+    private Spinner<LocalTime> timeInputField;
     private Button addButton;
     private Button deleteButton;
     private Button editButton;
@@ -81,9 +83,56 @@ public class MainController
         nameInputField.setPromptText("Name");
         dosageInputField = new TextField();
         dosageInputField.setPromptText("Dosage");
-        timeInputField = new TextField();
-        timeInputField.setPromptText("Time to Take (HH:MM)");
+        
+        // Spinner for time input
+        timeInputField = new Spinner<>();
+        SpinnerValueFactory<LocalTime> timeValueFactory = new SpinnerValueFactory<LocalTime>()
+        {
+            {
+                setValue(LocalTime.of(0,0)); // default time
+            }
 
+            @Override
+            public void decrement(int steps)
+            {
+                setValue(getValue().minusMinutes(steps * 1));
+            }
+
+            @Override
+            public void increment(int steps)
+            {
+                setValue(getValue().plusMinutes(steps * 1));
+            }
+        };
+
+        // Formatter for displaying time in HH:mm format when editing using the keyboard and not the spinner arrows
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        StringConverter<LocalTime> timeConverter = new StringConverter<LocalTime>()
+        {
+            @Override
+            public String toString(LocalTime time)
+            {
+                return time == null ? "" : time.format(timeFormatter);
+            }
+
+            @Override
+            public LocalTime fromString(String string)
+            {
+                if(string == null || string.isBlank())
+                {
+                    return null;
+                }
+                return LocalTime.parse(string, timeFormatter);
+            }
+        };
+
+        // Apply the converter to the spinner
+        timeValueFactory.setConverter(timeConverter);
+        timeInputField.setValueFactory(timeValueFactory);
+        timeInputField.setEditable(true);
+        timeInputField.setPrefWidth(150);
+
+        // HBox to hold input fields
         inputBox = new HBox(10, nameInputField, dosageInputField, timeInputField);
         inputBox.setPadding(new Insets(10));
         inputBox.setVisible(false); // Initially hidden
@@ -115,17 +164,31 @@ public class MainController
 
         // ----------------------------------------------------------------------------------------------
         // Set event handlers and button actions
+
+        // Common handler for Enter key press in input fields
         EventHandler<KeyEvent> enterKeyHandler = e -> {
             if(e.getCode() == KeyCode.ENTER) {
-                commitNewMedicine();
+                timeInputField.increment(0); // force spinner value
+                addNewMedicine();
             }
         };
 
-        // When the enter key is pressed in any input field, commit the new medicine
+        // When the enter key is pressed in any input field, add the new medicine to the table
         nameInputField.setOnKeyPressed(enterKeyHandler);
         dosageInputField.setOnKeyPressed(enterKeyHandler);
-        timeInputField.setOnKeyPressed(enterKeyHandler);
+        timeInputField.getEditor().setOnKeyPressed(enterKeyHandler);
 
+        EventHandler<MouseEvent> tableClickHandler = e -> {
+            if(medicineTable.getSelectionModel().getSelectedItem() != null)
+            {
+                editButton.setDisable(false);
+                deleteButton.setDisable(false);
+            }
+        };
+
+        medicineTable.setOnMouseClicked(tableClickHandler);
+
+        // Button actions
         addButton.setOnAction(e -> handleAddButton());
         deleteButton.setOnAction(e -> handleDeleteButton());
         editButton.setOnAction(e -> handleEditButton());
@@ -151,7 +214,7 @@ public class MainController
 
         nameInputField.clear();
         dosageInputField.clear();
-        timeInputField.clear();
+        timeInputField.getValueFactory().setValue(LocalTime.of(0,0));
 
         nameInputField.requestFocus();
     }
@@ -184,7 +247,7 @@ public class MainController
     /**
      * Creates a new Medicine from input fields and adds it to the list
      */
-    private void commitNewMedicine()
+    private void addNewMedicine()
     {
         if(nameInputField.getText().isBlank()) // Name is mandatory
         {
@@ -201,7 +264,7 @@ public class MainController
         Medicine newMedicine = new Medicine(
             nameInputField.getText().trim(),
             dosageInputField.getText().trim(),
-            LocalTime.parse(timeInputField.getText().trim())
+            timeInputField.getValue()
         );
 
         medicineLogic.addMedicine(newMedicine);
@@ -209,5 +272,7 @@ public class MainController
         inputBox.setVisible(false);
         inputBox.setManaged(false);
         addButton.setDisable(false);
+        cancelButton.setVisible(false);
+        cancelButton.setDisable(true);
     }
 }
