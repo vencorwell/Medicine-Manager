@@ -35,6 +35,8 @@ public class MainController
     private Button deleteButton;
     private Button editButton;
     private Button cancelButton;
+    private Button saveButton;
+    private boolean isInEditMode = false;
 
     public MainController(MedicineLogic medicineLogic) 
     {
@@ -130,10 +132,12 @@ public class MainController
         timeValueFactory.setConverter(timeConverter);
         timeInputField.setValueFactory(timeValueFactory);
         timeInputField.setEditable(true);
-        timeInputField.setPrefWidth(150);
+        timeInputField.setPrefWidth(100);
+
+        saveButton = new Button("Save");
 
         // HBox to hold input fields
-        inputBox = new HBox(10, nameInputField, dosageInputField, timeInputField);
+        inputBox = new HBox(10, nameInputField, dosageInputField, timeInputField, saveButton);
         inputBox.setPadding(new Insets(10));
         inputBox.setVisible(false); // Initially hidden
         inputBox.setManaged(false); // Exclude from layout calculations when hidden
@@ -167,9 +171,13 @@ public class MainController
 
         // Common handler for Enter key press in input fields
         EventHandler<KeyEvent> enterKeyHandler = e -> {
-            if(e.getCode() == KeyCode.ENTER) {
-                timeInputField.increment(0); // force spinner value
-                addNewMedicine();
+            if(e.getCode() == KeyCode.ENTER) 
+            {
+                if(addButton.isDisabled()) // Only add if in add mode
+                {
+                    timeInputField.increment(0); // force spinner value
+                    addNewMedicine();
+                }
             }
         };
 
@@ -178,6 +186,7 @@ public class MainController
         dosageInputField.setOnKeyPressed(enterKeyHandler);
         timeInputField.getEditor().setOnKeyPressed(enterKeyHandler);
 
+        // Table click handler to enable Edit and Delete buttons when a row is selected
         EventHandler<MouseEvent> tableClickHandler = e -> {
             if(medicineTable.getSelectionModel().getSelectedItem() != null)
             {
@@ -193,6 +202,7 @@ public class MainController
         deleteButton.setOnAction(e -> handleDeleteButton());
         editButton.setOnAction(e -> handleEditButton());
         cancelButton.setOnAction(e -> handleCancelButton());
+        saveButton.setOnAction(e -> handleSaveButton());
 
 
         // Create the scene
@@ -232,7 +242,22 @@ public class MainController
      */
     private void handleEditButton()
     {
-        // TO DO: Implement logic to handle editing a selected medicine
+        isInEditMode = true;
+        Medicine selectedMedicine = medicineTable.getSelectionModel().getSelectedItem();
+        if(selectedMedicine != null)
+        {
+            inputBox.setVisible(true);
+            inputBox.setManaged(true);
+            addButton.setDisable(true);
+            cancelButton.setVisible(true);
+            cancelButton.setDisable(false);
+
+            nameInputField.setText(selectedMedicine.getName());
+            dosageInputField.setText(selectedMedicine.getDosage());
+            timeInputField.getValueFactory().setValue(selectedMedicine.getTimeToTake());
+
+            nameInputField.requestFocus();
+        }
     }
 
     private void handleCancelButton()
@@ -242,6 +267,19 @@ public class MainController
         addButton.setDisable(false);
         cancelButton.setVisible(false);
         cancelButton.setDisable(true);
+    }
+
+    private void handleSaveButton()
+    {
+        if(addButton.isDisabled() && isInEditMode == false) // Saving a new medicine
+        {
+            timeInputField.increment(0); // force spinner value
+            addNewMedicine();
+        }
+        else if(isInEditMode) // Saving edits to an existing medicine
+        {
+            // TO DO: Implement logic to save edits to the selected medicine
+        }
     }
 
     /**
